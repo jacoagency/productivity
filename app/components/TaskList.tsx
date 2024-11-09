@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { TaskItem } from './TaskItem';
 import { format } from 'date-fns';
+import { useEventContext } from "../contexts/EventContext"
 
 interface Task {
   _id: string;
@@ -19,6 +20,7 @@ export function TaskList() {
   const [dueDateType, setDueDateType] = useState<'today' | 'tomorrow' | 'custom'>('today');
   const [customDate, setCustomDate] = useState('');
   const [customTime, setCustomTime] = useState('12:00');
+  const { refreshEvents } = useEventContext();
 
   // Cargar tareas desde la API
   useEffect(() => {
@@ -37,6 +39,34 @@ export function TaskList() {
     fetchTasks();
   }, []);
 
+  const updateCalendarEvent = async (task: Task, completed: boolean) => {
+    try {
+      const eventsResponse = await fetch('/api/events');
+      const events = await eventsResponse.json();
+      
+      const eventToUpdate = events.find((event: any) => 
+        event.title === task.title && 
+        new Date(event.start).getTime() === new Date(task.dueDate || '').getTime()
+      );
+
+      if (eventToUpdate) {
+        await fetch(`/api/events/${eventToUpdate._id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            color: completed ? '#22c55e' : '#7C3AED'
+          }),
+        });
+
+        refreshEvents();
+      }
+    } catch (error) {
+      console.error('Error updating calendar event:', error);
+    }
+  };
+
   const toggleTask = async (taskId: string) => {
     try {
       const task = tasks.find(t => t._id === taskId);
@@ -45,13 +75,22 @@ export function TaskList() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ completed: !task?.completed }),
+        body: JSON.stringify({ 
+          completed: !task?.completed
+        }),
       });
 
       if (response.ok) {
         setTasks(tasks.map(task => 
-          task._id === taskId ? { ...task, completed: !task.completed } : task
+          task._id === taskId ? { 
+            ...task, 
+            completed: !task.completed
+          } : task
         ));
+
+        if (task?.dueDate) {
+          await updateCalendarEvent(task, !task.completed);
+        }
       }
     } catch (error) {
       console.error('Error updating task:', error);
@@ -158,6 +197,8 @@ export function TaskList() {
               start: task.dueDate,
               end: new Date(new Date(task.dueDate).getTime() + 60 * 60 * 1000),
               desc: `Task due date`,
+              color: task.completed ? '#22c55e' : '#7C3AED',
+              isTaskEvent: true
             }),
           });
         }

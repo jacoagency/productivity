@@ -25,6 +25,7 @@ interface Event {
   end: Date;
   allDay?: boolean;
   desc?: string;
+  isTaskEvent?: boolean;
 }
 
 const ColoredDateCellWrapper = ({ children, value }: any) => {
@@ -74,11 +75,21 @@ export default function CalendarPage() {
   }, []);
 
   const handleSelect = ({ start, end }: { start: Date; end: Date }) => {
+    const startDate = new Date(start);
+    let endDate;
+    
+    if (end) {
+      endDate = new Date(end);
+    } else {
+      endDate = new Date(startDate);
+      endDate.setHours(startDate.getHours() + 1);
+    }
+
     setNewEvent({
       _id: Date.now().toString(),
       title: "",
-      start,
-      end: end || addMinutes(start, 60),
+      start: startDate,
+      end: endDate,
       desc: ""
     });
     setSelectedEvent(null);
@@ -94,13 +105,35 @@ export default function CalendarPage() {
   const deleteEvent = async () => {
     if (selectedEvent) {
       try {
+        // Eliminar el evento
         const response = await fetch(`/api/events/${selectedEvent._id}`, {
           method: 'DELETE',
         });
 
         if (response.ok) {
+          // Si es un evento de tarea, eliminar también la tarea
+          const tasksResponse = await fetch('/api/tasks');
+          if (tasksResponse.ok) {
+            const tasks = await tasksResponse.json();
+            const relatedTask = tasks.find((task: any) => 
+              task.title === selectedEvent.title && 
+              new Date(task.dueDate).getTime() === new Date(selectedEvent.start).getTime()
+            );
+
+            if (relatedTask) {
+              // Eliminar la tarea relacionada
+              await fetch(`/api/tasks/${relatedTask._id}`, {
+                method: 'DELETE',
+              });
+            }
+          }
+
+          // Actualizar la lista de eventos
           setEvents(events.filter(event => event._id !== selectedEvent._id));
           setShowModal(false);
+          
+          // Recargar la página para actualizar la lista de tareas
+          window.location.reload();
         }
       } catch (error) {
         console.error('Error deleting event:', error);
@@ -118,12 +151,20 @@ export default function CalendarPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(newEvent),
+          body: JSON.stringify({
+            ...newEvent,
+            start: new Date(newEvent.start),
+            end: new Date(newEvent.end)
+          }),
         });
 
         if (response.ok) {
           setEvents(events.map(event => 
-            event._id === selectedEvent._id ? newEvent : event
+            event._id === selectedEvent._id ? {
+              ...newEvent,
+              start: new Date(newEvent.start),
+              end: new Date(newEvent.end)
+            } : event
           ));
         }
       } else {
@@ -133,12 +174,33 @@ export default function CalendarPage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(newEvent),
+          body: JSON.stringify({
+            ...newEvent,
+            start: new Date(newEvent.start),
+            end: new Date(newEvent.end)
+          }),
         });
 
         if (response.ok) {
           const event = await response.json();
-          setEvents([...events, event]);
+          setEvents([...events, {
+            ...event,
+            start: new Date(event.start),
+            end: new Date(event.end)
+          }]);
+
+          // Crear tarea correspondiente
+          await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: newEvent.title,
+              dueDate: newEvent.start,
+              completed: false
+            }),
+          });
         }
       }
       setShowModal(false);
