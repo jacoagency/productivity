@@ -128,7 +128,7 @@ export default function CalendarPage() {
             }
           }
 
-          // Actualizar la lista de eventos
+          // Actualizar el estado local
           setEvents(events.filter(event => event._id !== selectedEvent._id));
           setShowModal(false);
           
@@ -261,7 +261,7 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        <div className="h-[700px]">
+        <div className="h-[700px] mt-4">
           <Calendar
             localizer={localizer}
             events={events}
@@ -276,7 +276,7 @@ export default function CalendarPage() {
             onNavigate={setDate}
             defaultDate={defaultDate}
             views={views}
-            className="dark:text-white"
+            className="h-full"
             components={{
               dateCellWrapper: ColoredDateCellWrapper,
               timeSlotWrapper: ColoredDateCellWrapper,

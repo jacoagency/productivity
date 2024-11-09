@@ -1,0 +1,37 @@
+.rbc-calendar {
+  font-family: inherit;
+}
+
+.rbc-toolbar {
+  margin-bottom: 1rem;
+}
+
+.rbc-toolbar button {
+  color: inherit;
+}
+
+.rbc-header {
+  padding: 0.75rem 0;
+  font-weight: 600;
+}
+
+.rbc-event {
+  background-color: rgb(147, 51, 234) !important;
+  border: none !important;
+}
+
+.rbc-today {
+  background-color: rgba(147, 51, 234, 0.05) !important;
+}
+
+.dark .rbc-toolbar button {
+  color: white;
+}
+
+.dark .rbc-header {
+  color: white;
+}
+
+.dark .rbc-off-range-bg {
+  background-color: rgba(255, 255, 255, 0.025);
+} 
