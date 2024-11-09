@@ -19,3 +19,52 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Añade estos estilos al final del archivo */
+.rbc-calendar {
+  @apply font-sans;
+}
+
+.rbc-header {
+  @apply dark:text-gray-300 py-2 font-semibold;
+}
+
+.rbc-today {
+  @apply bg-purple-50 dark:bg-purple-900/20 !important;
+}
+
+.rbc-event {
+  @apply bg-purple-600 !important;
+}
+
+.rbc-selected {
+  @apply bg-purple-700 !important;
+}
+
+.rbc-off-range-bg {
+  @apply bg-gray-50 dark:bg-gray-800/50 !important;
+}
+
+.rbc-day-bg + .rbc-day-bg {
+  @apply border-gray-200 dark:border-gray-700;
+}
+
+.rbc-month-row + .rbc-month-row {
+  @apply border-gray-200 dark:border-gray-700;
+}
+
+.rbc-header + .rbc-header {
+  @apply border-gray-200 dark:border-gray-700;
+}
+
+.rbc-time-header.rbc-overflowing {
+  @apply border-gray-200 dark:border-gray-700;
+}
+
+.rbc-time-view {
+  @apply border-gray-200 dark:border-gray-700;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  @apply border-gray-100 dark:border-gray-800;
+}
