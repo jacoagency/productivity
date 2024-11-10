@@ -111,6 +111,9 @@ export default function CalendarPage() {
         });
 
         if (response.ok) {
+          // Actualizar el estado local de eventos
+          setEvents(events.filter(event => event._id !== selectedEvent._id));
+
           // Si es un evento de tarea, eliminar también la tarea
           const tasksResponse = await fetch('/api/tasks');
           if (tasksResponse.ok) {
@@ -128,12 +131,7 @@ export default function CalendarPage() {
             }
           }
 
-          // Actualizar el estado local
-          setEvents(events.filter(event => event._id !== selectedEvent._id));
           setShowModal(false);
-          
-          // Recargar la página para actualizar la lista de tareas
-          window.location.reload();
         }
       } catch (error) {
         console.error('Error deleting event:', error);

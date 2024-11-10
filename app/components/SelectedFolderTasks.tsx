@@ -2,7 +2,6 @@
 
 import { FolderTaskList } from './FolderTaskList';
 import { format } from 'date-fns';
-import { DEFAULT_DAILY_TASKS } from '@/models/DefaultTask';
 import { useState, useEffect } from 'react';
 
 interface Task {
@@ -50,25 +49,9 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
     fetchFolderTasks();
   }, [folder.date]);
 
-  // Añadir las tareas por defecto solo si es una carpeta de día y es el día actual
-  const allTasks = folder.type === 'day' 
-    ? [
-        ...folderTasks,
-        ...(format(new Date(), 'yyyy-MM-dd') === folder.date
-          ? DEFAULT_DAILY_TASKS.map(defaultTask => ({
-              _id: `default_${defaultTask.title}`,
-              ...defaultTask,
-              dueDate: new Date(folder.date),
-              folder: 'day',
-              folderDate: folder.date
-            }))
-          : [])
-      ]
-    : folderTasks;
-
   const getCompletionStats = () => {
-    const total = allTasks.length;
-    const completed = allTasks.filter(task => task.completed).length;
+    const total = folderTasks.length;
+    const completed = folderTasks.filter(task => task.completed).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { total, completed, percentage };
   };
@@ -106,7 +89,7 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
       </div>
 
       <FolderTaskList
-        tasks={allTasks}
+        tasks={folderTasks}
         folderType={folder.type}
         onTaskUpdate={onTaskUpdate}
         selectedDate={folder.date}
