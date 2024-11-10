@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ResponsiveLine } from '@nivo/line';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { Clock, CheckCircle, AlertCircle } from 'lucide-react';
@@ -60,65 +59,13 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
   }
 
-  // Calcular estadísticas generales
-  const totalTasks = allTasks.length;
-  const completedTasks = allTasks.filter(task => task.completed);
-  const pendingTasks = allTasks.filter(task => !task.completed);
-  const completionRate = totalTasks > 0 ? (completedTasks.length / totalTasks) * 100 : 0;
-
-  // Calcular estadísticas de hoy de manera segura
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayTasks = allTasks.filter(task => {
-    try {
-      const taskDate = new Date(task.date);
-      if (isNaN(taskDate.getTime())) return false;
-      taskDate.setHours(0, 0, 0, 0);
-      return taskDate.getTime() === today.getTime();
-    } catch (error) {
-      return false;
-    }
-  });
-
-  const todayCompleted = todayTasks.filter(task => task.completed);
-  const todayPending = todayTasks.filter(task => !task.completed);
-
-  // Preparar datos para el gráfico de manera segura
-  const last24Hours = Array.from({ length: 24 }, (_, i) => {
-    const hour = new Date();
-    hour.setHours(hour.getHours() - (23 - i), 0, 0, 0);
-    
-    const tasksInHour = completedTasks.filter(task => {
-      if (!task.completedAt) return false;
-      try {
-        const completedHour = new Date(task.completedAt);
-        if (isNaN(completedHour.getTime())) return false;
-        return completedHour >= hour && completedHour < new Date(hour.getTime() + 3600000);
-      } catch (error) {
-        return false;
-      }
-    });
-
-    return {
-      x: format(hour, 'HH:mm'),
-      y: tasksInHour.length
-    };
-  });
-
-  const chartData = [
-    {
-      id: 'Completed Tasks',
-      data: last24Hours
-    }
-  ];
-
   return (
-    <main className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Task Dashboard</h1>
         <Link 
@@ -136,7 +83,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold">Total Tasks</h3>
             <Clock className="text-blue-500" />
           </div>
-          <p className="text-3xl font-bold mt-2">{totalTasks}</p>
+          <p className="text-3xl font-bold mt-2">{allTasks.length}</p>
           <p className="text-sm text-gray-500 mt-1">All time tasks</p>
         </div>
 
@@ -145,7 +92,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold">Completed</h3>
             <CheckCircle className="text-green-500" />
           </div>
-          <p className="text-3xl font-bold mt-2">{completedTasks.length}</p>
+          <p className="text-3xl font-bold mt-2">{allTasks.filter(task => task.completed).length}</p>
           <p className="text-sm text-gray-500 mt-1">Tasks completed</p>
         </div>
 
@@ -154,7 +101,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold">Pending</h3>
             <AlertCircle className="text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold mt-2">{pendingTasks.length}</p>
+          <p className="text-3xl font-bold mt-2">{allTasks.filter(task => !task.completed).length}</p>
           <p className="text-sm text-gray-500 mt-1">Tasks to do</p>
         </div>
 
@@ -164,91 +111,13 @@ export default function DashboardPage() {
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
               <div 
                 className="bg-blue-500 h-2.5 rounded-full transition-all duration-500" 
-                style={{ width: `${completionRate}%` }}
+                style={{ width: `${allTasks.length > 0 ? (allTasks.filter(task => task.completed).length / allTasks.length) * 100 : 0}%` }}
               ></div>
             </div>
-            <p className="text-3xl font-bold mt-2">{completionRate.toFixed(1)}%</p>
+            <p className="text-3xl font-bold mt-2">
+              {allTasks.length > 0 ? ((allTasks.filter(task => task.completed).length / allTasks.length) * 100).toFixed(1) : 0}%
+            </p>
           </div>
-        </div>
-      </div>
-
-      {/* Today's Stats */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Today's Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">Today's Tasks</p>
-            <p className="text-2xl font-bold">{todayTasks.length}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">Completed Today</p>
-            <p className="text-2xl font-bold text-green-500">{todayCompleted.length}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-600 dark:text-gray-400">Pending Today</p>
-            <p className="text-2xl font-bold text-yellow-500">{todayPending.length}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Activity Chart */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Activity Timeline</h2>
-        <div className="h-[300px]">
-          <ResponsiveLine
-            data={chartData}
-            margin={{ top: 20, right: 20, bottom: 50, left: 50 }}
-            xScale={{ type: 'point' }}
-            yScale={{ 
-              type: 'linear', 
-              min: 0,
-              max: Math.max(...last24Hours.map(d => d.y), 5)
-            }}
-            axisBottom={{
-              tickSize: 5,
-              tickPadding: 5,
-              tickRotation: -45,
-              legend: 'Time',
-              legendOffset: 40
-            }}
-            axisLeft={{
-              tickSize: 5,
-              tickPadding: 5,
-              tickRotation: 0,
-              legend: 'Tasks Completed',
-              legendOffset: -40
-            }}
-            enablePoints={true}
-            pointSize={8}
-            pointColor={{ theme: 'background' }}
-            pointBorderWidth={2}
-            pointBorderColor={{ from: 'serieColor' }}
-            pointLabelYOffset={-12}
-            useMesh={true}
-            curve="monotoneX"
-            enableArea={true}
-            areaOpacity={0.1}
-            theme={{
-              axis: {
-                ticks: {
-                  text: {
-                    fill: '#666'
-                  }
-                },
-                legend: {
-                  text: {
-                    fill: '#666'
-                  }
-                }
-              },
-              grid: {
-                line: {
-                  stroke: '#ddd',
-                  strokeWidth: 1
-                }
-              }
-            }}
-          />
         </div>
       </div>
 
@@ -262,7 +131,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {pendingTasks.slice(0, 5).map((task) => (
+            {allTasks.filter(task => !task.completed).slice(0, 5).map((task) => (
               <div
                 key={task._id}
                 onClick={() => router.push(`/tasks?selected=${task._id}`)}
@@ -294,7 +163,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {completedTasks
+            {allTasks.filter(task => task.completed)
+              .sort((a, b) => {
+                if (!a.completedAt || !b.completedAt) return 0;
+                return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
+              })
               .slice(0, 5)
               .map((task) => (
                 <div
@@ -311,6 +184,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 } 
