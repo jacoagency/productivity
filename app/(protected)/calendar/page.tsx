@@ -227,7 +227,7 @@ export default function CalendarPage() {
   return (
     <main className="container mx-auto p-6 sm:p-8">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
               Calendar
@@ -236,11 +236,13 @@ export default function CalendarPage() {
               {format(date, 'MMMM yyyy')}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <button
               onClick={() => setDate(new Date())}
-              className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 
-                       rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="px-4 py-2 text-base font-semibold bg-gray-100 dark:bg-gray-700 
+                       text-gray-700 dark:text-white rounded-lg 
+                       hover:bg-gray-200 dark:hover:bg-gray-600 
+                       transition-colors shadow-sm"
             >
               Today
             </button>
@@ -256,7 +258,8 @@ export default function CalendarPage() {
                 });
                 setShowModal(true);
               }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1.5 rounded-lg transition-colors"
+              className="px-4 py-2 text-base font-semibold bg-purple-600 text-white 
+                       rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
             >
               Add Event
             </button>
@@ -282,10 +285,26 @@ export default function CalendarPage() {
             components={{
               dateCellWrapper: ColoredDateCellWrapper,
               timeSlotWrapper: ColoredDateCellWrapper,
+              toolbar: CustomToolbar,
             }}
             style={{ 
               backgroundColor: 'transparent',
               height: '100%' 
+            }}
+            messages={{
+              today: 'Today',
+              previous: 'Back',
+              next: 'Next',
+              month: 'Month',
+              week: 'Week',
+              day: 'Day',
+              agenda: 'Agenda',
+            }}
+            formats={{
+              monthHeaderFormat: 'MMMM yyyy',
+              dayHeaderFormat: 'EEEE, MMMM d',
+              dayRangeHeaderFormat: ({ start, end }) =>
+                `${format(start, 'MMMM d')} - ${format(end, 'MMMM d, yyyy')}`,
             }}
             step={30}
             timeslots={1}
@@ -419,4 +438,70 @@ export default function CalendarPage() {
       )}
     </main>
   );
-} 
+}
+
+// Componente personalizado para la barra de herramientas
+const CustomToolbar = (toolbar: any) => {
+  const goToBack = () => {
+    toolbar.onNavigate('PREV');
+  };
+
+  const goToNext = () => {
+    toolbar.onNavigate('NEXT');
+  };
+
+  const goToCurrent = () => {
+    toolbar.onNavigate('TODAY');
+  };
+
+  return (
+    <div className="flex justify-between items-center mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+      <div className="flex gap-2">
+        <button
+          onClick={goToCurrent}
+          className="px-4 py-2 text-base font-semibold bg-white dark:bg-gray-800 
+                   text-gray-700 dark:text-white rounded-lg 
+                   hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
+        >
+          Today
+        </button>
+        <button
+          onClick={goToBack}
+          className="px-4 py-2 text-base font-semibold bg-white dark:bg-gray-800 
+                   text-gray-700 dark:text-white rounded-lg 
+                   hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
+        >
+          Back
+        </button>
+        <button
+          onClick={goToNext}
+          className="px-4 py-2 text-base font-semibold bg-white dark:bg-gray-800 
+                   text-gray-700 dark:text-white rounded-lg 
+                   hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
+        >
+          Next
+        </button>
+      </div>
+
+      <span className="text-xl font-bold text-gray-800 dark:text-white">
+        {toolbar.label}
+      </span>
+
+      <div className="flex gap-2">
+        {toolbar.views.map((view: string) => (
+          <button
+            key={view}
+            onClick={() => toolbar.onView(view)}
+            className={`px-4 py-2 text-base font-semibold rounded-lg transition-colors shadow-sm
+                      ${toolbar.view === view 
+                        ? 'bg-purple-600 text-white hover:bg-purple-700'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
+                      }`}
+          >
+            {view.charAt(0).toUpperCase() + view.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}; 

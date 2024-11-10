@@ -1,37 +1,130 @@
+/* Estilos base del calendario */
 .rbc-calendar {
-  font-family: inherit;
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 font-sans;
 }
 
+/* Barra de herramientas principal */
 .rbc-toolbar {
-  margin-bottom: 1rem;
+  @apply mb-8 flex flex-wrap justify-between items-center gap-4 
+         bg-gray-50 dark:bg-gray-700 p-4 rounded-lg;
 }
 
-.rbc-toolbar button {
-  color: inherit;
+/* Botones de navegación (Today, Back, Next) */
+.rbc-btn-group {
+  @apply flex gap-2;
 }
 
+.rbc-btn-group button {
+  @apply px-4 py-2 
+         text-base font-semibold 
+         bg-white dark:bg-gray-800 
+         text-gray-700 dark:text-white 
+         border border-gray-200 dark:border-gray-600 
+         rounded-lg shadow-sm 
+         hover:bg-gray-50 dark:hover:bg-gray-700 
+         transition-all duration-200;
+}
+
+/* Botones de vista (Month, Week, Day, Agenda) */
+.rbc-toolbar .rbc-btn-group:last-child button {
+  @apply bg-gray-100 dark:bg-gray-600 
+         text-gray-600 dark:text-gray-200 
+         font-medium;
+}
+
+/* Botón activo */
+.rbc-toolbar button.rbc-active {
+  @apply bg-purple-600 text-white border-purple-600 
+         hover:bg-purple-700 dark:hover:bg-purple-700 
+         shadow-md;
+}
+
+/* Título del mes/semana */
+.rbc-toolbar-label {
+  @apply text-2xl font-bold text-gray-800 dark:text-white;
+}
+
+/* Encabezados de días */
 .rbc-header {
-  padding: 0.75rem 0;
-  font-weight: 600;
+  @apply py-4 text-base font-semibold 
+         text-gray-700 dark:text-gray-200 
+         border-b border-gray-200 dark:border-gray-700 
+         bg-gray-50 dark:bg-gray-700;
 }
 
+/* Eventos */
 .rbc-event {
-  background-color: rgb(147, 51, 234) !important;
-  border: none !important;
+  @apply bg-purple-600 text-white 
+         text-sm font-medium 
+         px-3 py-1 rounded-lg 
+         border-none shadow-sm 
+         !important;
 }
 
+/* Día actual */
 .rbc-today {
-  background-color: rgba(147, 51, 234, 0.05) !important;
+  @apply bg-purple-50 dark:bg-purple-900/20 !important;
 }
 
-.dark .rbc-toolbar button {
-  color: white;
+/* Enlace "show more" */
+.rbc-show-more {
+  @apply text-purple-600 dark:text-purple-400 
+         font-medium hover:underline 
+         bg-transparent;
 }
 
-.dark .rbc-header {
-  color: white;
+/* Vista de tiempo */
+.rbc-time-view {
+  @apply border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden;
 }
 
-.dark .rbc-off-range-bg {
-  background-color: rgba(255, 255, 255, 0.025);
+.rbc-time-header {
+  @apply border-b border-gray-200 dark:border-gray-700;
+}
+
+.rbc-time-content {
+  @apply border-t border-gray-200 dark:border-gray-700;
+}
+
+/* Etiquetas de tiempo */
+.rbc-time-slot {
+  @apply text-gray-600 dark:text-gray-300 font-medium;
+}
+
+.rbc-label {
+  @apply text-sm font-semibold text-gray-600 dark:text-gray-300;
+}
+
+/* Vista de agenda */
+.rbc-agenda-view table.rbc-agenda-table {
+  @apply border-separate border-spacing-0 w-full;
+}
+
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  @apply bg-gray-50 dark:bg-gray-700 
+         text-gray-700 dark:text-gray-200 
+         font-semibold text-sm 
+         px-4 py-3 
+         border-b border-gray-200 dark:border-gray-600;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  @apply border-b border-gray-200 dark:border-gray-700 
+         px-4 py-3 
+         text-gray-700 dark:text-gray-300;
+}
+
+/* Responsivo */
+@media (max-width: 640px) {
+  .rbc-toolbar {
+    @apply flex-col items-stretch;
+  }
+  
+  .rbc-toolbar-label {
+    @apply text-xl text-center;
+  }
+
+  .rbc-btn-group {
+    @apply justify-center;
+  }
 } 
