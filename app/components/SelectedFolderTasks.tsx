@@ -27,32 +27,45 @@ interface SelectedFolderTasksProps {
 export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTasksProps) {
   const [folderTasks, setFolderTasks] = useState<Task[]>([]);
 
-  useEffect(() => {
-    const fetchFolderTasks = async () => {
-      try {
-        const response = await fetch('/api/tasks');
-        if (response.ok) {
-          const allTasks = await response.json();
-          // Filtrar tareas por la fecha de la carpeta
-          const tasksForFolder = allTasks.filter((task: Task) => {
-            if (!task.dueDate) return false;
-            const taskDate = format(new Date(task.dueDate), 'yyyy-MM-dd');
-            return taskDate === folder.date;
-          });
-          setFolderTasks(tasksForFolder);
-        }
-      } catch (error) {
-        console.error('Error fetching folder tasks:', error);
+  const fetchFolderTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const allTasks = await response.json();
+        // Filtrar tareas por la fecha de la carpeta
+        const tasksForFolder = allTasks.filter((task: Task) => {
+          if (!task.dueDate) return false;
+          const taskDate = format(new Date(task.dueDate), 'yyyy-MM-dd');
+          return taskDate === folder.date;
+        });
+        setFolderTasks(tasksForFolder);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching folder tasks:', error);
+    }
+  };
 
+  // Cargar tareas inicialmente
+  useEffect(() => {
     fetchFolderTasks();
+  }, [folder.date]);
+
+  // Actualizar tareas cada 2 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchFolderTasks();
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, [folder.date]);
 
   const getCompletionStats = () => {
     const total = folderTasks.length;
+    if (total === 0) return { total: 0, completed: 0, percentage: 0 };
+    
     const completed = folderTasks.filter(task => task.completed).length;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const percentage = Math.round((completed / total) * 100);
+    
     return { total, completed, percentage };
   };
 
@@ -91,7 +104,7 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
       <FolderTaskList
         tasks={folderTasks}
         folderType={folder.type}
-        onTaskUpdate={onTaskUpdate}
+        onTaskUpdate={fetchFolderTasks}
         selectedDate={folder.date}
       />
     </div>
