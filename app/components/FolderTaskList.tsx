@@ -40,50 +40,56 @@ export function FolderTaskList({ tasks, folderType, onTaskUpdate, selectedDate }
     if (!newTaskTitle.trim()) return;
 
     try {
-      const [hours, minutes] = taskTime.split(':');
-      const selectedDate = new Date(`${taskDate}T${taskTime}:00`);
-      
-      const localDate = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000);
+      // Crear fecha con la hora seleccionada
+      const selectedDate = new Date(`${taskDate}T${taskTime}`);
 
-      const taskResponse = await fetch('/api/tasks', {
+      // Primero intentar crear el evento
+      const eventResponse = await fetch('/api/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           title: newTaskTitle,
-          folder: folderType,
-          folderDate: format(localDate, folderType === 'day' ? 'yyyy-MM-dd' : 'yyyy-MM'),
-          dueDate: localDate
+          start: selectedDate.toISOString(), // Usar toISOString para mantener la hora exacta
+          end: new Date(selectedDate.getTime() + 60 * 60 * 1000).toISOString(),
+          desc: `Task due date`,
+          color: '#7C3AED',
+          isTaskEvent: true
         }),
       });
 
-      if (taskResponse.ok) {
-        const task = await taskResponse.json();
-        setLocalTasks([task, ...localTasks]);
-        
-        // Crear el evento en el calendario
-        await fetch('/api/events', {
+      if (eventResponse.status === 409) {
+        alert('There is already a task scheduled for this time. Please choose a different time.');
+        return;
+      }
+
+      if (eventResponse.ok) {
+        // Si el evento se creó exitosamente, crear la tarea
+        const taskResponse = await fetch('/api/tasks', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            title: task.title,
-            start: localDate,
-            end: new Date(localDate.getTime() + 60 * 60 * 1000),
-            desc: `Task due date`,
-            color: '#7C3AED',
-            isTaskEvent: true
+            title: newTaskTitle,
+            folder: folderType,
+            folderDate: format(selectedDate, folderType === 'day' ? 'yyyy-MM-dd' : 'yyyy-MM'),
+            dueDate: selectedDate.toISOString() // Usar toISOString para mantener la hora exacta
           }),
         });
-        
-        setNewTaskTitle('');
-        setTaskDate(format(new Date(), 'yyyy-MM-dd'));
-        setTaskTime('12:00');
-        setShowModal(false);
-        refreshEvents();
-        onTaskUpdate();
+
+        if (taskResponse.ok) {
+          const task = await taskResponse.json();
+          setLocalTasks([task, ...localTasks]);
+          
+          setNewTaskTitle('');
+          setTaskDate(format(new Date(), 'yyyy-MM-dd'));
+          setTaskTime('12:00');
+          setShowModal(false);
+          refreshEvents();
+          onTaskUpdate();
+        }
       }
     } catch (error) {
       console.error('Error adding task:', error);

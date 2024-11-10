@@ -287,6 +287,11 @@ export default function CalendarPage() {
               backgroundColor: 'transparent',
               height: '100%' 
             }}
+            step={30}
+            timeslots={1}
+            min={new Date(0, 0, 0, 6, 0, 0)}
+            max={new Date(0, 0, 0, 22, 0, 0)}
+            dayLayoutAlgorithm={'no-overlap'}
           />
         </div>
       </div>

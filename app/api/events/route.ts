@@ -35,6 +35,29 @@ export async function POST(request: Request) {
 
     const client = await clientPromise;
     const db = client.db('productivity');
+
+    // Verificar si hay eventos que se solapan
+    const overlappingEvents = await db.collection('events').find({
+      userId,
+      $or: [
+        {
+          start: {
+            $lt: new Date(end),
+            $gte: new Date(start)
+          }
+        },
+        {
+          end: {
+            $gt: new Date(start),
+            $lte: new Date(end)
+          }
+        }
+      ]
+    }).toArray();
+
+    if (overlappingEvents.length > 0) {
+      return new NextResponse('There is already an event scheduled for this time', { status: 409 });
+    }
     
     const event = {
       userId,
