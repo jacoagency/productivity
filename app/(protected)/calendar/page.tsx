@@ -177,7 +177,9 @@ export default function CalendarPage() {
           body: JSON.stringify({
             ...newEvent,
             start: new Date(newEvent.start),
-            end: new Date(newEvent.end)
+            end: new Date(newEvent.end),
+            color: '#7C3AED', // Color púrpura por defecto
+            isTaskEvent: true
           }),
         });
 
@@ -189,7 +191,7 @@ export default function CalendarPage() {
             end: new Date(event.end)
           }]);
 
-          // Crear tarea correspondiente
+          // Crear la tarea correspondiente
           await fetch('/api/tasks', {
             method: 'POST',
             headers: {
@@ -198,7 +200,9 @@ export default function CalendarPage() {
             body: JSON.stringify({
               title: newEvent.title,
               dueDate: newEvent.start,
-              completed: false
+              completed: false,
+              folder: 'day',
+              folderDate: format(new Date(newEvent.start), 'yyyy-MM-dd')
             }),
           });
         }

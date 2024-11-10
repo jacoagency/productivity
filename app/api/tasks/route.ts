@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import clientPromise from '@/lib/mongodb';
+import { format } from 'date-fns';
 
 export async function GET() {
   try {
@@ -14,7 +15,7 @@ export async function GET() {
     const tasks = await db
       .collection('tasks')
       .find({ userId })
-      .sort({ createdAt: -1 })
+      .sort({ folderDate: -1, createdAt: -1 })
       .toArray();
 
     return NextResponse.json(tasks);
@@ -31,7 +32,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, dueDate } = body;
+    const { title, dueDate, folder = 'day' } = body;
+
+    const taskDate = dueDate ? new Date(dueDate) : new Date();
+    const folderDate = format(taskDate, 'yyyy-MM-dd');
+    const monthDate = format(taskDate, 'yyyy-MM');
+    const yearDate = format(taskDate, 'yyyy');
 
     const client = await clientPromise;
     const db = client.db('productivity');
@@ -41,6 +47,10 @@ export async function POST(request: Request) {
       title,
       completed: false,
       dueDate: dueDate ? new Date(dueDate) : null,
+      folder,
+      folderDate,
+      monthFolder: monthDate,
+      yearFolder: yearDate,
       createdAt: new Date()
     };
 
