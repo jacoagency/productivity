@@ -2,6 +2,8 @@
 
 import { FolderTaskList } from './FolderTaskList';
 import { format } from 'date-fns';
+import { DEFAULT_DAILY_TASKS } from '@/models/DefaultTask';
+import { useState, useEffect } from 'react';
 
 interface Task {
   _id: string;
@@ -24,9 +26,49 @@ interface SelectedFolderTasksProps {
 }
 
 export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTasksProps) {
+  const [folderTasks, setFolderTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const fetchFolderTasks = async () => {
+      try {
+        const response = await fetch('/api/tasks');
+        if (response.ok) {
+          const allTasks = await response.json();
+          // Filtrar tareas por la fecha de la carpeta
+          const tasksForFolder = allTasks.filter((task: Task) => {
+            if (!task.dueDate) return false;
+            const taskDate = format(new Date(task.dueDate), 'yyyy-MM-dd');
+            return taskDate === folder.date;
+          });
+          setFolderTasks(tasksForFolder);
+        }
+      } catch (error) {
+        console.error('Error fetching folder tasks:', error);
+      }
+    };
+
+    fetchFolderTasks();
+  }, [folder.date]);
+
+  // Añadir las tareas por defecto solo si es una carpeta de día y es el día actual
+  const allTasks = folder.type === 'day' 
+    ? [
+        ...folderTasks,
+        ...(format(new Date(), 'yyyy-MM-dd') === folder.date
+          ? DEFAULT_DAILY_TASKS.map(defaultTask => ({
+              _id: `default_${defaultTask.title}`,
+              ...defaultTask,
+              dueDate: new Date(folder.date),
+              folder: 'day',
+              folderDate: folder.date
+            }))
+          : [])
+      ]
+    : folderTasks;
+
   const getCompletionStats = () => {
-    const total = folder.tasks.length;
-    const completed = folder.tasks.filter(task => task.completed).length;
+    const total = allTasks.length;
+    const completed = allTasks.filter(task => task.completed).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { total, completed, percentage };
   };
@@ -64,9 +106,10 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
       </div>
 
       <FolderTaskList
-        tasks={folder.tasks}
+        tasks={allTasks}
         folderType={folder.type}
         onTaskUpdate={onTaskUpdate}
+        selectedDate={folder.date}
       />
     </div>
   );

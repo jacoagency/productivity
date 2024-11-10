@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TaskItem } from './TaskItem';
 import { format } from 'date-fns';
 import { useEventContext } from '../contexts/EventContext';
@@ -19,14 +19,21 @@ interface FolderTaskListProps {
   tasks: Task[];
   folderType: 'day' | 'month' | 'year';
   onTaskUpdate: () => void;
+  selectedDate?: string;
 }
 
-export function FolderTaskList({ tasks, folderType, onTaskUpdate }: FolderTaskListProps) {
+export function FolderTaskList({ tasks, folderType, onTaskUpdate, selectedDate }: FolderTaskListProps) {
+  const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [showModal, setShowModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [taskDate, setTaskDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [taskDate, setTaskDate] = useState(selectedDate || format(new Date(), 'yyyy-MM-dd'));
   const [taskTime, setTaskTime] = useState('12:00');
   const { refreshEvents } = useEventContext();
+
+  // Actualizar las tareas locales cuando cambian las props
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
 
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +60,9 @@ export function FolderTaskList({ tasks, folderType, onTaskUpdate }: FolderTaskLi
 
       if (taskResponse.ok) {
         const task = await taskResponse.json();
+        setLocalTasks([task, ...localTasks]);
         
+        // Crear el evento en el calendario
         await fetch('/api/events', {
           method: 'POST',
           headers: {
@@ -83,54 +92,76 @@ export function FolderTaskList({ tasks, folderType, onTaskUpdate }: FolderTaskLi
 
   const toggleTask = async (taskId: string) => {
     try {
-      const task = tasks.find(t => t._id === taskId);
+      const task = localTasks.find(t => t._id === taskId);
+      if (!task) return;
+
+      // Actualizar el estado local inmediatamente para mejor UX
+      const newCompletedState = !task.completed;
+      setLocalTasks(localTasks.map(t => 
+        t._id === taskId ? { ...t, completed: newCompletedState } : t
+      ));
+
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          completed: !task?.completed
+          completed: newCompletedState
         }),
       });
 
       if (response.ok) {
-        if (task?.dueDate) {
-          const eventsResponse = await fetch('/api/events');
-          const events = await eventsResponse.json();
-          const eventToUpdate = events.find((event: any) => 
-            event.title === task.title && 
-            new Date(event.start).getTime() === new Date(task.dueDate || '').getTime()
-          );
+        // Actualizar el evento en el calendario
+        const eventsResponse = await fetch('/api/events');
+        const events = await eventsResponse.json();
+        const eventToUpdate = events.find((event: any) => 
+          event.title === task.title && 
+          new Date(event.start).getTime() === new Date(task.dueDate || '').getTime()
+        );
 
-          if (eventToUpdate) {
-            await fetch(`/api/events/${eventToUpdate._id}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                color: !task.completed ? '#22c55e' : '#7C3AED'
-              }),
-            });
-            refreshEvents();
-          }
+        if (eventToUpdate) {
+          await fetch(`/api/events/${eventToUpdate._id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              color: newCompletedState ? '#22c55e' : '#7C3AED'
+            }),
+          });
+          refreshEvents();
         }
-        onTaskUpdate();
+      } else {
+        // Si hay error, revertir el cambio local
+        setLocalTasks(localTasks.map(t => 
+          t._id === taskId ? { ...t, completed: task.completed } : t
+        ));
       }
     } catch (error) {
       console.error('Error updating task:', error);
+      // En caso de error, revertir el cambio local
+      const task = localTasks.find(t => t._id === taskId);
+      if (task) {
+        setLocalTasks(localTasks.map(t => 
+          t._id === taskId ? { ...t, completed: task.completed } : t
+        ));
+      }
     }
   };
 
   const deleteTask = async (taskId: string) => {
     try {
-      const task = tasks.find(t => t._id === taskId);
+      const task = localTasks.find(t => t._id === taskId);
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
+        // Actualizar el estado local inmediatamente
+        setLocalTasks(localTasks.filter(t => t._id !== taskId));
+
+        // Eliminar el evento del calendario si existe
         if (task?.dueDate) {
           const eventsResponse = await fetch('/api/events');
           const events = await eventsResponse.json();
@@ -164,7 +195,7 @@ export function FolderTaskList({ tasks, folderType, onTaskUpdate }: FolderTaskLi
         + Add a new task...
       </button>
 
-      {tasks.map(task => (
+      {localTasks.map(task => (
         <TaskItem 
           key={task._id}
           id={task._id}

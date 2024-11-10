@@ -13,19 +13,32 @@ export async function PATCH(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const taskId = params.taskId;
     const body = await request.json();
     const { completed } = body;
 
     const client = await clientPromise;
     const db = client.db('productivity');
     
-    await db.collection('tasks').updateOne(
-      { _id: new ObjectId(params.taskId), userId },
-      { $set: { completed } }
+    const result = await db.collection('tasks').updateOne(
+      { _id: new ObjectId(taskId), userId },
+      { 
+        $set: { 
+          completed,
+          updatedAt: new Date()
+        } 
+      }
     );
 
-    return NextResponse.json({ success: true });
+    if (result.matchedCount === 0) {
+      return new NextResponse('Task not found', { status: 404 });
+    }
+
+    // Devolver la tarea actualizada
+    const updatedTask = await db.collection('tasks').findOne({ _id: new ObjectId(taskId) });
+    return NextResponse.json(updatedTask);
   } catch (error) {
+    console.error('Error updating task:', error);
     return new NextResponse('Internal Error', { status: 500 });
   }
 }
@@ -40,16 +53,22 @@ export async function DELETE(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    const taskId = params.taskId;
     const client = await clientPromise;
     const db = client.db('productivity');
     
-    await db.collection('tasks').deleteOne({
-      _id: new ObjectId(params.taskId),
+    const result = await db.collection('tasks').deleteOne({
+      _id: new ObjectId(taskId),
       userId
     });
 
+    if (result.deletedCount === 0) {
+      return new NextResponse('Task not found', { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting task:', error);
     return new NextResponse('Internal Error', { status: 500 });
   }
 } 
