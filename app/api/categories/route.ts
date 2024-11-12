@@ -11,12 +11,12 @@ export async function GET() {
 
     const client = await clientPromise;
     const db = client.db('productivity');
-    const defaultTasks = await db
-      .collection('defaultTasks')
+    const categories = await db
+      .collection('categories')
       .find({ userId })
       .toArray();
 
-    return NextResponse.json(defaultTasks);
+    return NextResponse.json(categories);
   } catch (error) {
     return new NextResponse('Internal Error', { status: 500 });
   }
@@ -30,21 +30,20 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, category, estimatedTime } = body;
+    const { label, color } = body;
 
     const client = await clientPromise;
     const db = client.db('productivity');
     
-    const defaultTask = {
+    const category = {
       userId,
-      title,
-      category,
-      estimatedTime,
+      label,
+      color,
       createdAt: new Date()
     };
 
-    const result = await db.collection('defaultTasks').insertOne(defaultTask);
-    return NextResponse.json({ ...defaultTask, _id: result.insertedId });
+    const result = await db.collection('categories').insertOne(category);
+    return NextResponse.json({ ...category, _id: result.insertedId });
   } catch (error) {
     return new NextResponse('Internal Error', { status: 500 });
   }

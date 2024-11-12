@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { DEFAULT_DAILY_TASKS } from '@/models/DefaultTask';
+import { CATEGORIES, IMPORTANCE_LEVELS } from '@/types/task';
 import { SelectedFolderTasks } from '@/app/components/SelectedFolderTasks';
 
 interface Task {
@@ -27,6 +27,13 @@ export default function TasksPage() {
   const [folders, setFolders] = useState<TaskFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    category: '',
+    importance: 'medium',
+    dueDate: new Date()
+  });
 
   const fetchAndOrganizeTasks = async () => {
     try {
@@ -50,28 +57,19 @@ export default function TasksPage() {
     const organized: TaskFolder[] = [];
     const today = format(new Date(), 'yyyy-MM-dd');
 
-    // Primero, crear la carpeta de "Today" con las tareas por defecto
+    // Create "Today" folder
     const todayFolder: TaskFolder = {
       name: 'Today',
       type: 'day',
       date: today,
-      tasks: [
-        ...DEFAULT_DAILY_TASKS.map(defaultTask => ({
-          _id: `default_${defaultTask.title}`,
-          ...defaultTask,
-          dueDate: new Date(),
-          folder: 'day',
-          folderDate: today
-        })),
-        ...tasks.filter(task => {
-          const taskDate = task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : null;
-          return taskDate === today;
-        })
-      ]
+      tasks: tasks.filter(task => {
+        const taskDate = task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : null;
+        return taskDate === today;
+      })
     };
     organized.push(todayFolder);
 
-    // Luego, organizar el resto de las tareas por mes y día
+    // Organize remaining tasks by month and day
     tasks.forEach(task => {
       if (!task.dueDate) return;
       const taskDate = new Date(task.dueDate);
@@ -80,7 +78,7 @@ export default function TasksPage() {
 
       if (dayDate === today) return; // Skip today's tasks as they're already added
 
-      // Encontrar o crear la carpeta del mes
+      // Find or create month folder
       let monthFolder = organized.find(f => f.type === 'month' && f.date === monthDate);
       if (!monthFolder) {
         monthFolder = {
@@ -93,7 +91,7 @@ export default function TasksPage() {
         organized.push(monthFolder);
       }
 
-      // Encontrar o crear la subcarpeta del día
+      // Find or create day subfolder
       let dayFolder = monthFolder.days?.find(d => d.date === dayDate);
       if (!dayFolder) {
         dayFolder = {
@@ -105,13 +103,13 @@ export default function TasksPage() {
         monthFolder.days?.push(dayFolder);
       }
 
-      // Añadir la tarea a la subcarpeta del día
+      // Add task to day subfolder
       dayFolder.tasks.push(task);
-      // También añadir la tarea a la carpeta del mes
+      // Also add task to month folder
       monthFolder.tasks.push(task);
     });
 
-    // Ordenar carpetas y subcarpetas
+    // Sort folders and subfolders
     organized.sort((a, b) => {
       if (a.date === today) return -1;
       if (b.date === today) return 1;
@@ -123,9 +121,42 @@ export default function TasksPage() {
 
     setFolders(organized);
     
-    // Seleccionar "Today" por defecto
+    // Select "Today" by default
     if (!selectedFolder) {
       setSelectedFolder(today);
+    }
+  };
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newTask.title,
+          category: newTask.category,
+          importance: newTask.importance,
+          dueDate: newTask.dueDate,
+          folder: 'day',
+          folderDate: format(newTask.dueDate, 'yyyy-MM-dd')
+        }),
+      });
+
+      if (response.ok) {
+        setNewTask({
+          title: '',
+          category: '',
+          importance: 'medium',
+          dueDate: new Date()
+        });
+        setShowModal(false);
+        fetchAndOrganizeTasks();
+      }
+    } catch (error) {
+      console.error('Error adding task:', error);
     }
   };
 
@@ -139,7 +170,7 @@ export default function TasksPage() {
     );
   }
 
-  // Encontrar la carpeta o subcarpeta seleccionada
+  // Find the selected folder or subfolder
   let selectedFolderData = folders.find(f => f.date === selectedFolder);
   if (!selectedFolderData) {
     for (const folder of folders) {
@@ -154,7 +185,7 @@ export default function TasksPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="grid grid-cols-12 gap-6">
-        {/* Sidebar con carpetas */}
+        {/* Sidebar with folders */}
         <div className="col-span-3 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
             Task Folders
@@ -162,7 +193,7 @@ export default function TasksPage() {
           <div className="space-y-2">
             {folders.map(folder => (
               <div key={folder.date}>
-                {/* Carpeta del mes o Today */}
+                {/* Month folder or Today */}
                 <button
                   onClick={() => setSelectedFolder(folder.date)}
                   className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
@@ -179,7 +210,7 @@ export default function TasksPage() {
                   </div>
                 </button>
                 
-                {/* Subcarpetas de días */}
+                {/* Day subfolders */}
                 {folder.days?.map(day => (
                   <button
                     key={day.date}
@@ -203,7 +234,7 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Lista de tareas */}
+        {/* Task list */}
         <div className="col-span-9 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           {selectedFolderData ? (
             <SelectedFolderTasks
@@ -219,6 +250,115 @@ export default function TasksPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Nueva Tarea */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                Add New Task
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddTask} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Task Title
+                </label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Category
+                </label>
+                <select
+                  value={newTask.category}
+                  onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="">Select Category</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Importance Level
+                </label>
+                <div className="flex gap-4">
+                  {IMPORTANCE_LEVELS.map(level => (
+                    <label key={level.id} className="flex items-center">
+                      <input
+                        type="radio"
+                        name="importance"
+                        value={level.id}
+                        checked={newTask.importance === level.id}
+                        onChange={(e) => setNewTask({ ...newTask, importance: e.target.value })}
+                        className="mr-2 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: level.color }} />
+                        <span>{level.label}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Due Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={format(newTask.dueDate, "yyyy-MM-dd'T'HH:mm")}
+                  onChange={(e) => setNewTask({ ...newTask, dueDate: new Date(e.target.value) })}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 
+                           dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white 
+                           rounded-lg transition-colors"
+                >
+                  Add Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

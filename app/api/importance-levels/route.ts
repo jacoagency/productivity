@@ -11,13 +11,12 @@ export async function GET() {
 
     const client = await clientPromise;
     const db = client.db('productivity');
-    const events = await db
-      .collection('events')
+    const levels = await db
+      .collection('importance-levels')
       .find({ userId })
-      .sort({ start: 1 })
       .toArray();
 
-    return NextResponse.json(events);
+    return NextResponse.json(levels);
   } catch (error) {
     return new NextResponse('Internal Error', { status: 500 });
   }
@@ -31,25 +30,20 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, start, end, desc, category, importance, allDay } = body;
+    const { label, color } = body;
 
     const client = await clientPromise;
     const db = client.db('productivity');
     
-    const event = {
+    const level = {
       userId,
-      title,
-      start: new Date(start),
-      end: new Date(end),
-      desc,
-      category,
-      importance,
-      allDay,
+      label,
+      color,
       createdAt: new Date()
     };
 
-    const result = await db.collection('events').insertOne(event);
-    return NextResponse.json({ ...event, _id: result.insertedId });
+    const result = await db.collection('importance-levels').insertOne(level);
+    return NextResponse.json({ ...level, _id: result.insertedId });
   } catch (error) {
     return new NextResponse('Internal Error', { status: 500 });
   }

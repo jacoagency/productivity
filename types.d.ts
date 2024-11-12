@@ -27,6 +27,15 @@ declare module 'lucide-react' {
   export const Clock: FC<SVGProps<SVGSVGElement>>;
   export const CheckCircle: FC<SVGProps<SVGSVGElement>>;
   export const AlertCircle: FC<SVGProps<SVGSVGElement>>;
+  export const Plus: FC<SVGProps<SVGSVGElement>>;
+  export const Pencil: FC<SVGProps<SVGSVGElement>>;
+  export const Trash2: FC<SVGProps<SVGSVGElement>>;
+  export const CalendarDays: FC<SVGProps<SVGSVGElement>>;
+  export const Tag: FC<SVGProps<SVGSVGElement>>;
+  export const LayoutDashboard: FC<SVGProps<SVGSVGElement>>;
+  export const Calendar: FC<SVGProps<SVGSVGElement>>;
+  export const ListTodo: FC<SVGProps<SVGSVGElement>>;
+  export const Settings: FC<SVGProps<SVGSVGElement>>;
 }
 
 declare module 'mongodb' {

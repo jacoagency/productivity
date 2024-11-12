@@ -5,6 +5,9 @@ import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, addMinutes } from 'date-fns';
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useState, useEffect, useMemo } from 'react';
+import { CATEGORIES, IMPORTANCE_LEVELS } from '@/types/task';
+import { NewCategoryModal } from '@/app/components/NewCategoryModal';
+import { useCategories } from '@/hooks/useCategories';
 
 const locales = {
   'en-US': require('date-fns/locale/en-US'),
@@ -26,6 +29,8 @@ interface Event {
   allDay?: boolean;
   desc?: string;
   isTaskEvent?: boolean;
+  category?: string;
+  importance?: string;
 }
 
 const ColoredDateCellWrapper = ({ children, value }: any) => {
@@ -51,6 +56,9 @@ export default function CalendarPage() {
     end: addMinutes(new Date(), 60),
     desc: ""
   });
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [showNewImportanceModal, setShowNewImportanceModal] = useState(false);
+  const { categories, importanceLevels } = useCategories();
 
   // Load events from API
   useEffect(() => {
@@ -176,7 +184,6 @@ export default function CalendarPage() {
             ...newEvent,
             start: new Date(newEvent.start),
             end: new Date(newEvent.end),
-            color: '#7C3AED', // Color púrpura por defecto
             isTaskEvent: true
           }),
         });
@@ -189,7 +196,7 @@ export default function CalendarPage() {
             end: new Date(event.end)
           }]);
 
-          // Crear la tarea correspondiente
+          // Crear la tarea correspondiente con la misma categoría e importancia
           await fetch('/api/tasks', {
             method: 'POST',
             headers: {
@@ -199,6 +206,8 @@ export default function CalendarPage() {
               title: newEvent.title,
               dueDate: newEvent.start,
               completed: false,
+              category: newEvent.category,
+              importance: newEvent.importance,
               folder: 'day',
               folderDate: format(new Date(newEvent.start), 'yyyy-MM-dd')
             }),
@@ -224,49 +233,78 @@ export default function CalendarPage() {
     []
   );
 
+  const eventStyleGetter = (event: Event) => {
+    let backgroundColor = '#7C3AED'; // default purple
+
+    if (event.importance) {
+      const importance = IMPORTANCE_LEVELS.find(i => i.id === event.importance);
+      if (importance) {
+        backgroundColor = importance.color;
+      }
+    } else if (event.category) {
+      const category = CATEGORIES.find(c => c.id === event.category);
+      if (category) {
+        backgroundColor = category.color;
+      }
+    }
+
+    return {
+      style: {
+        backgroundColor,
+        opacity: 0.8,
+        color: 'white',
+        border: 'none',
+        display: 'block',
+        padding: '2px 5px',
+        borderRadius: '4px'
+      }
+    };
+  };
+
+  const handleNewCategory = async (newCategory: { label: string; color: string }) => {
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newCategory),
+      });
+
+      if (response.ok) {
+        const category = await response.json();
+        // Actualizar la lista de categorías
+        // Aquí necesitarías manejar el estado de las categorías
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
+  };
+
+  const handleNewImportance = async (newImportance: { label: string; color: string }) => {
+    try {
+      const response = await fetch('/api/importance-levels', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newImportance),
+      });
+
+      if (response.ok) {
+        const importance = await response.json();
+        // Actualizar la lista de niveles de importancia
+        // Aquí necesitarías manejar el estado de los niveles
+      }
+    } catch (error) {
+      console.error('Error creating importance level:', error);
+    }
+  };
+
   return (
     <main className="container mx-auto p-6 sm:p-8">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-              Calendar
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {format(date, 'MMMM yyyy')}
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setDate(new Date())}
-              className="px-4 py-2 text-base font-semibold bg-gray-100 dark:bg-gray-700 
-                       text-gray-700 dark:text-white rounded-lg 
-                       hover:bg-gray-200 dark:hover:bg-gray-600 
-                       transition-colors shadow-sm"
-            >
-              Today
-            </button>
-            <button
-              onClick={() => {
-                setSelectedEvent(null);
-                setNewEvent({
-                  _id: Date.now().toString(),
-                  title: "",
-                  start: new Date(),
-                  end: addMinutes(new Date(), 60),
-                  desc: ""
-                });
-                setShowModal(true);
-              }}
-              className="px-4 py-2 text-base font-semibold bg-purple-600 text-white 
-                       rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
-            >
-              Add Event
-            </button>
-          </div>
-        </div>
-
-        <div className="h-[700px] mt-4">
+        <div className="h-[700px]">
           <Calendar
             localizer={localizer}
             events={events}
@@ -285,7 +323,6 @@ export default function CalendarPage() {
             components={{
               dateCellWrapper: ColoredDateCellWrapper,
               timeSlotWrapper: ColoredDateCellWrapper,
-              toolbar: CustomToolbar,
             }}
             style={{ 
               backgroundColor: 'transparent',
@@ -311,6 +348,7 @@ export default function CalendarPage() {
             min={new Date(0, 0, 0, 6, 0, 0)}
             max={new Date(0, 0, 0, 22, 0, 0)}
             dayLayoutAlgorithm={'no-overlap'}
+            eventStyleGetter={eventStyleGetter}
           />
         </div>
       </div>
@@ -403,6 +441,56 @@ export default function CalendarPage() {
                 <span className="text-sm text-gray-700 dark:text-gray-300">All day event</span>
               </label>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Category
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={newEvent.category || ''}
+                    onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
+                    className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCategoryModal(true)}
+                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    New
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Importance Level
+                </label>
+                <div className="flex gap-4">
+                  {importanceLevels.map(level => (
+                    <label key={level.id} className="flex items-center">
+                      <input
+                        type="radio"
+                        name="importance"
+                        value={level.id}
+                        checked={newEvent.importance === level.id}
+                        onChange={(e) => setNewEvent({ ...newEvent, importance: e.target.value })}
+                        className="mr-2 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: level.color }} />
+                        <span>{level.label}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex justify-end items-center space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 {selectedEvent && (
                   <button
@@ -436,72 +524,24 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
+
+      {showNewCategoryModal && (
+        <NewCategoryModal
+          type="category"
+          onClose={() => setShowNewCategoryModal(false)}
+          onSave={(id) => {
+            setNewEvent({ ...newEvent, category: id });
+          }}
+        />
+      )}
+
+      {showNewImportanceModal && (
+        <NewCategoryModal
+          type="importance"
+          onClose={() => setShowNewImportanceModal(false)}
+          onSave={handleNewImportance}
+        />
+      )}
     </main>
   );
 }
-
-// Componente personalizado para la barra de herramientas
-const CustomToolbar = (toolbar: any) => {
-  const goToBack = () => {
-    toolbar.onNavigate('PREV');
-  };
-
-  const goToNext = () => {
-    toolbar.onNavigate('NEXT');
-  };
-
-  const goToCurrent = () => {
-    toolbar.onNavigate('TODAY');
-  };
-
-  return (
-    <div className="flex justify-between items-center mb-6 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-      <div className="flex gap-2">
-        <button
-          onClick={goToCurrent}
-          className="px-4 py-2 text-base font-semibold bg-white dark:bg-gray-800 
-                   text-gray-700 dark:text-white rounded-lg 
-                   hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
-        >
-          Today
-        </button>
-        <button
-          onClick={goToBack}
-          className="px-4 py-2 text-base font-semibold bg-white dark:bg-gray-800 
-                   text-gray-700 dark:text-white rounded-lg 
-                   hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
-        >
-          Back
-        </button>
-        <button
-          onClick={goToNext}
-          className="px-4 py-2 text-base font-semibold bg-white dark:bg-gray-800 
-                   text-gray-700 dark:text-white rounded-lg 
-                   hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors shadow-sm"
-        >
-          Next
-        </button>
-      </div>
-
-      <span className="text-xl font-bold text-gray-800 dark:text-white">
-        {toolbar.label}
-      </span>
-
-      <div className="flex gap-2">
-        {toolbar.views.map((view: string) => (
-          <button
-            key={view}
-            onClick={() => toolbar.onView(view)}
-            className={`px-4 py-2 text-base font-semibold rounded-lg transition-colors shadow-sm
-                      ${toolbar.view === view 
-                        ? 'bg-purple-600 text-white hover:bg-purple-700'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600'
-                      }`}
-          >
-            {view.charAt(0).toUpperCase() + view.slice(1)}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}; 

@@ -32,12 +32,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, dueDate, folder = 'day' } = body;
-
-    const taskDate = dueDate ? new Date(dueDate) : new Date();
-    const folderDate = format(taskDate, 'yyyy-MM-dd');
-    const monthDate = format(taskDate, 'yyyy-MM');
-    const yearDate = format(taskDate, 'yyyy');
+    const { title, dueDate, category, importance, folder = 'day' } = body;
 
     const client = await clientPromise;
     const db = client.db('productivity');
@@ -47,15 +42,29 @@ export async function POST(request: Request) {
       title,
       completed: false,
       dueDate: dueDate ? new Date(dueDate) : null,
+      category,
+      importance,
       folder,
-      folderDate,
-      monthFolder: monthDate,
-      yearFolder: yearDate,
       createdAt: new Date()
     };
 
-    const result = await db.collection('tasks').insertOne(task);
-    return NextResponse.json({ ...task, _id: result.insertedId });
+    const taskResult = await db.collection('tasks').insertOne(task);
+
+    const event = {
+      userId,
+      title,
+      start: new Date(dueDate),
+      end: new Date(new Date(dueDate).setHours(new Date(dueDate).getHours() + 1)),
+      category,
+      importance,
+      isTaskEvent: true,
+      taskId: taskResult.insertedId.toString(),
+      createdAt: new Date()
+    };
+
+    await db.collection('events').insertOne(event);
+
+    return NextResponse.json({ ...task, _id: taskResult.insertedId });
   } catch (error) {
     return new NextResponse('Internal Error', { status: 500 });
   }
