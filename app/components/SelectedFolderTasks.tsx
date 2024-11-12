@@ -60,6 +60,11 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
         }),
       });
 
+      if (response.status === 409) {
+        alert('This time slot overlaps with another task. Please choose a different time.');
+        return;
+      }
+
       if (response.ok) {
         setNewTask({
           title: '',
@@ -107,12 +112,34 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
     }
   };
 
+  const calculateProgress = () => {
+    if (folder.tasks.length === 0) return 0;
+    const completedTasks = folder.tasks.filter(task => task.completed).length;
+    return (completedTasks / folder.tasks.length) * 100;
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-          {folder.name}
-        </h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {folder.name}
+          </h2>
+          <div className="mt-2 w-64">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm text-gray-900 dark:text-gray-300">Progress</span>
+              <span className="text-sm text-gray-900 dark:text-gray-300">
+                {calculateProgress().toFixed(0)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+              <div 
+                className="bg-purple-600 h-2.5 rounded-full transition-all duration-500" 
+                style={{ width: `${calculateProgress()}%` }}
+              />
+            </div>
+          </div>
+        </div>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg 

@@ -36,6 +36,25 @@ export async function POST(request: Request) {
 
     const client = await clientPromise;
     const db = client.db('productivity');
+
+    // Check for overlapping tasks
+    const startTime = new Date(dueDate);
+    const endTime = new Date(new Date(dueDate).setHours(startTime.getHours() + 1));
+
+    const overlappingTasks = await db.collection('tasks').find({
+      userId,
+      dueDate: {
+        $gte: startTime,
+        $lt: endTime
+      }
+    }).toArray();
+
+    if (overlappingTasks.length > 0) {
+      return new NextResponse(
+        JSON.stringify({ error: 'This time slot overlaps with another task' }), 
+        { status: 409 }
+      );
+    }
     
     const task = {
       userId,
@@ -51,12 +70,13 @@ export async function POST(request: Request) {
 
     const taskResult = await db.collection('tasks').insertOne(task);
 
+    // Create event only if no eventId was provided and there's a dueDate
     if (!eventId && dueDate) {
       const event = {
         userId,
         title,
         start: new Date(dueDate),
-        end: new Date(new Date(dueDate).setHours(new Date(dueDate).getHours() + 1)), // 1 hour duration
+        end: endTime,
         category,
         importance,
         isTaskEvent: true,
