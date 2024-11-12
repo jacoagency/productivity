@@ -134,7 +134,7 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
                 onChange={(e) => handleToggleTask(task._id, e.target.checked)}
                 className="h-5 w-5 text-purple-600 rounded border-gray-300"
               />
-              <span className={`flex-1 ${task.completed ? 'line-through text-gray-500' : ''}`}>
+              <span className={`flex-1 text-gray-900 dark:text-white ${task.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
                 {task.title}
               </span>
               

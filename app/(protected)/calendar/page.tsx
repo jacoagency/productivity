@@ -506,7 +506,7 @@ export default function CalendarPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-gray-300 mb-2">
                   Importance Level
                 </label>
                 <div className="flex gap-4">
@@ -522,7 +522,7 @@ export default function CalendarPage() {
                       />
                       <span className="flex items-center gap-1">
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: level.color }} />
-                        <span>{level.label}</span>
+                        <span className="text-gray-900 dark:text-gray-300">{level.label}</span>
                       </span>
                     </label>
                   ))}
