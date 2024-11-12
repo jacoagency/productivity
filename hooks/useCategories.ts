@@ -7,9 +7,15 @@ interface Category {
   color: string;
 }
 
+type ImportanceLevel = {
+  id: string;
+  label: string;
+  color: string;
+};
+
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([...CATEGORIES]);
-  const [importanceLevels, setImportanceLevels] = useState([...IMPORTANCE_LEVELS]);
+  const [importanceLevels, setImportanceLevels] = useState<ImportanceLevel[]>([...IMPORTANCE_LEVELS]);
 
   useEffect(() => {
     fetchCategories();

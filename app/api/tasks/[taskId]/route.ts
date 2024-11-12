@@ -16,25 +16,23 @@ export async function DELETE(
     const client = await clientPromise;
     const db = client.db('productivity');
     
-    // Primero obtener la tarea para encontrar el evento asociado
+    // First get the task to find its eventId
     const task = await db.collection('tasks').findOne({
       _id: new ObjectId(params.taskId),
       userId
     });
 
-    // Eliminar la tarea
+    // Delete the task
     await db.collection('tasks').deleteOne({
       _id: new ObjectId(params.taskId),
       userId
     });
 
-    // Si existe la tarea, buscar y eliminar el evento asociado
-    if (task) {
+    // If the task has an eventId, delete the corresponding event
+    if (task && task.eventId) {
       await db.collection('events').deleteOne({
-        userId,
-        title: task.title,
-        start: task.dueDate,
-        isTaskEvent: true
+        _id: new ObjectId(task.eventId),
+        userId
       });
     }
 

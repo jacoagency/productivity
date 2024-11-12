@@ -67,7 +67,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Task Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Task Dashboard</h1>
         <Link 
           href="/tasks" 
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
@@ -80,33 +80,33 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Total Tasks</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Total Tasks</h3>
             <Clock className="text-blue-500" />
           </div>
-          <p className="text-3xl font-bold mt-2">{allTasks.length}</p>
-          <p className="text-sm text-gray-500 mt-1">All time tasks</p>
+          <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{allTasks.length}</p>
+          <p className="text-sm text-gray-900 dark:text-gray-400 mt-1">All time tasks</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Completed</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Completed</h3>
             <CheckCircle className="text-green-500" />
           </div>
-          <p className="text-3xl font-bold mt-2">{allTasks.filter(task => task.completed).length}</p>
-          <p className="text-sm text-gray-500 mt-1">Tasks completed</p>
+          <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{allTasks.filter(task => task.completed).length}</p>
+          <p className="text-sm text-gray-900 dark:text-gray-400 mt-1">Tasks completed</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Pending</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pending</h3>
             <AlertCircle className="text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold mt-2">{allTasks.filter(task => !task.completed).length}</p>
-          <p className="text-sm text-gray-500 mt-1">Tasks to do</p>
+          <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{allTasks.filter(task => !task.completed).length}</p>
+          <p className="text-sm text-gray-900 dark:text-gray-400 mt-1">Tasks to do</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold">Overall Progress</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Overall Progress</h3>
           <div className="mt-2">
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
               <div 
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                 style={{ width: `${allTasks.length > 0 ? (allTasks.filter(task => task.completed).length / allTasks.length) * 100 : 0}%` }}
               ></div>
             </div>
-            <p className="text-3xl font-bold mt-2">
+            <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">
               {allTasks.length > 0 ? ((allTasks.filter(task => task.completed).length / allTasks.length) * 100).toFixed(1) : 0}%
             </p>
           </div>
@@ -125,7 +125,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Recent Pending Tasks</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Pending Tasks</h3>
             <Link href="/tasks?filter=pending" className="text-blue-500 hover:text-blue-600">
               View All
             </Link>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
               >
                 <div>
-                  <span className="font-medium">{task.title}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{task.title}</span>
                   <span className={`ml-2 text-xs px-2 py-1 rounded ${
                     task.priority === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
                     task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                     {task.priority}
                   </span>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-sm text-gray-900 dark:text-gray-400">
                   {formatDate(task.date)}
                 </span>
               </div>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Recently Completed</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recently Completed</h3>
             <Link href="/tasks?filter=completed" className="text-blue-500 hover:text-blue-600">
               View All
             </Link>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                   className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                 >
                   <span className="font-medium">{task.title}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-900 dark:text-gray-400">
                     {task.completedAt ? formatDate(task.completedAt) : 'No completion date'}
                   </span>
                 </div>

@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { CATEGORIES, IMPORTANCE_LEVELS } from '@/types/task';
 import { NewCategoryModal } from '@/app/components/NewCategoryModal';
 import { useCategories } from '@/hooks/useCategories';
+import '@/app/styles/calendar.css';
 
 const locales = {
   'en-US': require('date-fns/locale/en-US'),
@@ -43,6 +44,20 @@ const ColoredDateCellWrapper = ({ children, value }: any) => {
   });
 };
 
+const isColorLight = (color: string) => {
+  // Convert hex to RGB
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  
+  // Calculate brightness (using relative luminance)
+  // Values closer to 1 are lighter, closer to 0 are darker
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  
+  return brightness > 128;
+};
+
 export default function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -67,12 +82,19 @@ export default function CalendarPage() {
         const response = await fetch('/api/events');
         if (response.ok) {
           const data = await response.json();
-          const parsedEvents = data.map((event: any) => ({
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
-          }));
-          setEvents(parsedEvents);
+          // Create a Map to ensure unique events by _id
+          const eventsMap = new Map();
+          data.forEach((event: any) => {
+            if (!eventsMap.has(event._id)) {
+              eventsMap.set(event._id, {
+                ...event,
+                start: new Date(event.start),
+                end: new Date(event.end)
+              });
+            }
+          });
+          // Convert Map back to array
+          setEvents(Array.from(eventsMap.values()));
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -120,7 +142,7 @@ export default function CalendarPage() {
 
         if (response.ok) {
           // Actualizar el estado local de eventos
-          setEvents(events.filter(event => event._id !== selectedEvent._id));
+          setEvents(prevEvents => prevEvents.filter(event => event._id !== selectedEvent._id));
 
           // Si es un evento de tarea, eliminar también la tarea
           const tasksResponse = await fetch('/api/tasks');
@@ -175,28 +197,35 @@ export default function CalendarPage() {
         }
       } else {
         // Create new event
+        const eventData = {
+          title: newEvent.title,
+          start: new Date(newEvent.start),
+          end: new Date(newEvent.end),
+          desc: newEvent.desc,
+          category: newEvent.category,
+          importance: newEvent.importance,
+          isTaskEvent: true
+        };
+
         const response = await fetch('/api/events', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ...newEvent,
-            start: new Date(newEvent.start),
-            end: new Date(newEvent.end),
-            isTaskEvent: true
-          }),
+          body: JSON.stringify(eventData),
         });
 
         if (response.ok) {
-          const event = await response.json();
-          setEvents([...events, {
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
+          const createdEvent = await response.json();
+          
+          // Add the new event to state
+          setEvents(prevEvents => [...prevEvents, {
+            ...createdEvent,
+            start: new Date(createdEvent.start),
+            end: new Date(createdEvent.end)
           }]);
 
-          // Crear la tarea correspondiente con la misma categoría e importancia
+          // Create the corresponding task with event reference
           await fetch('/api/tasks', {
             method: 'POST',
             headers: {
@@ -209,7 +238,8 @@ export default function CalendarPage() {
               category: newEvent.category,
               importance: newEvent.importance,
               folder: 'day',
-              folderDate: format(new Date(newEvent.start), 'yyyy-MM-dd')
+              folderDate: format(new Date(newEvent.start), 'yyyy-MM-dd'),
+              eventId: createdEvent._id // Link to the event
             }),
           });
         }
@@ -235,28 +265,36 @@ export default function CalendarPage() {
 
   const eventStyleGetter = (event: Event) => {
     let backgroundColor = '#7C3AED'; // default purple
+    let textColor = 'white';  // default text color
 
     if (event.importance) {
       const importance = IMPORTANCE_LEVELS.find(i => i.id === event.importance);
       if (importance) {
         backgroundColor = importance.color;
+        // Check if the background color is light
+        const isLightColor = isColorLight(importance.color);
+        textColor = isLightColor ? '#1F2937' : 'white'; // Use dark text for light backgrounds
       }
     } else if (event.category) {
       const category = CATEGORIES.find(c => c.id === event.category);
       if (category) {
         backgroundColor = category.color;
+        // Check if the background color is light
+        const isLightColor = isColorLight(category.color);
+        textColor = isLightColor ? '#1F2937' : 'white'; // Use dark text for light backgrounds
       }
     }
 
     return {
       style: {
         backgroundColor,
-        opacity: 0.8,
-        color: 'white',
+        color: textColor,
         border: 'none',
         display: 'block',
         padding: '2px 5px',
-        borderRadius: '4px'
+        borderRadius: '4px',
+        fontWeight: '500', // Make text slightly bolder
+        opacity: 0.9,      // Slightly more opaque
       }
     };
   };
@@ -348,7 +386,7 @@ export default function CalendarPage() {
             min={new Date(0, 0, 0, 6, 0, 0)}
             max={new Date(0, 0, 0, 22, 0, 0)}
             dayLayoutAlgorithm={'no-overlap'}
-            eventStyleGetter={eventStyleGetter}
+            eventPropGetter={eventStyleGetter}
           />
         </div>
       </div>
@@ -539,7 +577,15 @@ export default function CalendarPage() {
         <NewCategoryModal
           type="importance"
           onClose={() => setShowNewImportanceModal(false)}
-          onSave={handleNewImportance}
+          onSave={async (id) => {
+            // First create the importance level
+            await handleNewImportance({
+              label: id, // We'll use the id as the label temporarily
+              color: '#000000' // Default color
+            });
+            // Then set it as the selected importance
+            setNewEvent({ ...newEvent, importance: id });
+          }}
         />
       )}
     </main>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import clientPromise from '@/lib/mongodb';
+import { format } from 'date-fns';
 
 export async function GET() {
   try {
@@ -11,10 +12,21 @@ export async function GET() {
 
     const client = await clientPromise;
     const db = client.db('productivity');
+    
+    // Only get events that have a unique taskId (if they have one)
     const events = await db
       .collection('events')
-      .find({ userId })
-      .sort({ start: 1 })
+      .aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: { $ifNull: ['$taskId', '$_id'] },
+            doc: { $first: '$$ROOT' }
+          }
+        },
+        { $replaceRoot: { newRoot: '$doc' } },
+        { $sort: { start: 1 } }
+      ])
       .toArray();
 
     return NextResponse.json(events);
@@ -36,6 +48,7 @@ export async function POST(request: Request) {
     const client = await clientPromise;
     const db = client.db('productivity');
     
+    // Create the event first
     const event = {
       userId,
       title,
