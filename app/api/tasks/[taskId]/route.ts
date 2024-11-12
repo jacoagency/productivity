@@ -16,7 +16,7 @@ export async function DELETE(
     const client = await clientPromise;
     const db = client.db('productivity');
     
-    // First get the task to find its eventId
+    // First get the task
     const task = await db.collection('tasks').findOne({
       _id: new ObjectId(params.taskId),
       userId
@@ -28,10 +28,13 @@ export async function DELETE(
       userId
     });
 
-    // If the task has an eventId, delete the corresponding event
-    if (task && task.eventId) {
+    // Delete any associated event (check both eventId and taskId references)
+    if (task) {
       await db.collection('events').deleteOne({
-        _id: new ObjectId(task.eventId),
+        $or: [
+          { _id: task.eventId ? new ObjectId(task.eventId) : null },
+          { taskId: params.taskId }
+        ],
         userId
       });
     }

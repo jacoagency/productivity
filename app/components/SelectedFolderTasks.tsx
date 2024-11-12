@@ -27,6 +27,12 @@ interface SelectedFolderTasksProps {
   onTaskUpdate: () => void;
 }
 
+const getDefaultDueDate = () => {
+  const date = new Date();
+  date.setHours(9, 0, 0, 0); // Set to 9:00:00.000 AM
+  return date;
+};
+
 export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTasksProps) {
   const [showModal, setShowModal] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
@@ -36,7 +42,7 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
     title: '',
     category: '',
     importance: 'medium',
-    dueDate: new Date()
+    dueDate: getDefaultDueDate()
   });
 
   const handleAddTask = async (e: React.FormEvent) => {
@@ -59,7 +65,7 @@ export function SelectedFolderTasks({ folder, onTaskUpdate }: SelectedFolderTask
           title: '',
           category: '',
           importance: 'medium',
-          dueDate: new Date()
+          dueDate: getDefaultDueDate()
         });
         setShowModal(false);
         onTaskUpdate();

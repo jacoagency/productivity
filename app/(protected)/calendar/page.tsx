@@ -58,6 +58,12 @@ const isColorLight = (color: string) => {
   return brightness > 128;
 };
 
+const getDefaultEventTime = () => {
+  const date = new Date();
+  date.setHours(9, 0, 0, 0);
+  return date;
+};
+
 export default function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -67,8 +73,8 @@ export default function CalendarPage() {
   const [newEvent, setNewEvent] = useState<Event>({
     _id: '',
     title: "",
-    start: new Date(),
-    end: addMinutes(new Date(), 60),
+    start: getDefaultEventTime(),
+    end: new Date(getDefaultEventTime().setHours(10, 0, 0, 0)),
     desc: ""
   });
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
@@ -106,14 +112,10 @@ export default function CalendarPage() {
 
   const handleSelect = ({ start, end }: { start: Date; end: Date }) => {
     const startDate = new Date(start);
-    let endDate;
+    startDate.setHours(9, 0, 0, 0); // Always set to 9:00 AM
     
-    if (end) {
-      endDate = new Date(end);
-    } else {
-      endDate = new Date(startDate);
-      endDate.setHours(startDate.getHours() + 1);
-    }
+    let endDate = new Date(startDate);
+    endDate.setHours(10, 0, 0, 0); // Set end time to 10:00 AM
 
     setNewEvent({
       _id: Date.now().toString(),
@@ -171,6 +173,28 @@ export default function CalendarPage() {
 
   const handleEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check for overlapping events
+    const isOverlapping = events.some(event => {
+      if (selectedEvent && event._id === selectedEvent._id) return false;
+      
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      const newStart = new Date(newEvent.start);
+      const newEnd = new Date(newEvent.end);
+
+      return (
+        (newStart >= eventStart && newStart < eventEnd) ||
+        (newEnd > eventStart && newEnd <= eventEnd) ||
+        (newStart <= eventStart && newEnd >= eventEnd)
+      );
+    });
+
+    if (isOverlapping) {
+      alert('This time slot overlaps with another event. Please choose a different time.');
+      return;
+    }
+
     try {
       if (selectedEvent) {
         // Update existing event
